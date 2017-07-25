@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using Newtonsoft.Json;
+using AzDoc.Common.Constants;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using AzDoc.Domain.WorkflowContext.ValueObjects;
@@ -17,9 +18,14 @@ namespace AzDoc.Domain.WorkflowContext.Aggregates.Steps
         private string _aadClientSecret;
         private string _aadResourceId;
 
+        public HttpStep()
+        {
+            _stepType = StepType.Http;
+        }
+
         public override StepExecutionResult Execute(StepInputParameter parameter)
         {
-            throw new NotImplementedException();
+            return ExecuteAsync(parameter).Result;
         }
 
         public override async Task<StepExecutionResult> ExecuteAsync(StepInputParameter stepParameter)
@@ -51,23 +57,23 @@ namespace AzDoc.Domain.WorkflowContext.Aggregates.Steps
         private void Initialize(StepInputParameter stepParameter)
         {
             var parameters = stepParameter.ParametersDictionary;
-            _endpoint = new Uri(parameters["Endpoint"].Attribute.Value);
-            _method = new HttpMethod(parameters["Method"].Attribute.Value);
+            _endpoint = new Uri(parameters["Endpoint"].GetActualValue(stepParameter.StepResults));
+            _method = new HttpMethod(parameters["Method"].GetActualValue(stepParameter.StepResults));
 
             if (parameters.TryGetValue("Body", out Parameter BodyParameter))
-                _body = BodyParameter.Attribute.Value;
+                _body = BodyParameter.GetActualValue(stepParameter.StepResults);
 
             if (parameters.TryGetValue("Header", out Parameter HeaderParameter))
-                _headers = JsonConvert.DeserializeObject<Dictionary<string, string>>(HeaderParameter.Attribute.Value);
+                _headers = JsonConvert.DeserializeObject<Dictionary<string, string>>(HeaderParameter.GetActualValue(stepParameter.StepResults));
 
             if (parameters.TryGetValue("AadClientId", out Parameter AadClientParameter))
-                _aadClientId = AadClientParameter.Attribute.Value;
+                _aadClientId = AadClientParameter.GetActualValue(stepParameter.StepResults);
 
             if (parameters.TryGetValue("AadClientSecret", out Parameter AddClientSecret))
-                _aadClientId = AddClientSecret.Attribute.Value;
+                _aadClientSecret = AddClientSecret.GetActualValue(stepParameter.StepResults);
 
             if (parameters.TryGetValue("AadResourceId", out Parameter AddResourceId))
-                _aadResourceId = AddResourceId.Attribute.Value;
+                _aadResourceId = AddResourceId.GetActualValue(stepParameter.StepResults);
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpAsync()
